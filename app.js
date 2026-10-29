@@ -1,10 +1,32 @@
-// Load reviews from reviews.json and render single simple cards with copy button
+// Arrow Puzzle Reviews Manager
+// Supports Copying, Marking/Unmarking, and Filtering (Pending, Marked, All)
 
-async function loadAndRenderReviews() {
-  const reviewsList = document.getElementById('reviewsList');
-  const reviewCount = document.getElementById('reviewCount');
+const STORAGE_KEY = 'arrow_puzzle_marked_reviews';
 
-  let reviews = [];
+let reviews = [];
+let markedIds = new Set();
+let currentFilter = 'pending';
+
+// Load marked reviews from localStorage
+function loadMarkedIds() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const arr = JSON.parse(saved);
+      markedIds = new Set(arr);
+    }
+  } catch (e) {
+    markedIds = new Set();
+  }
+}
+
+// Save marked reviews to localStorage
+function saveMarkedIds() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify([...markedIds]));
+}
+
+async function init() {
+  loadMarkedIds();
 
   try {
     const res = await fetch('reviews.json');
@@ -19,31 +41,97 @@ async function loadAndRenderReviews() {
     reviews = getFallbackReviews();
   }
 
-  // Update total count
-  reviewCount.textContent = `${reviews.length} reviews`;
+  // Setup filter dropdown listener
+  const filterSelect = document.getElementById('filterSelect');
+  filterSelect.value = currentFilter;
+  filterSelect.addEventListener('change', (e) => {
+    currentFilter = e.target.value;
+    render();
+  });
 
-  // Render cards
-  reviewsList.innerHTML = reviews.map((item, index) => {
+  render();
+}
+
+function render() {
+  const reviewsList = document.getElementById('reviewsList');
+  const reviewCount = document.getElementById('reviewCount');
+  const filterSelect = document.getElementById('filterSelect');
+
+  const total = reviews.length;
+  const markedCount = reviews.filter(r => markedIds.has(r.id)).length;
+  const pendingCount = total - markedCount;
+
+  // Update filter select option texts with counts
+  filterSelect.options[0].text = `Pending Reviews (${pendingCount})`;
+  filterSelect.options[1].text = `Marked Reviews (${markedCount})`;
+  filterSelect.options[2].text = `All Reviews (${total})`;
+
+  // Filter reviews according to selection
+  const filtered = reviews.filter(r => {
+    const isMarked = markedIds.has(r.id);
+    if (currentFilter === 'pending') return !isMarked;
+    if (currentFilter === 'marked') return isMarked;
+    return true; // 'all'
+  });
+
+  // Update header count badge
+  if (currentFilter === 'pending') {
+    reviewCount.textContent = `${pendingCount} pending`;
+  } else if (currentFilter === 'marked') {
+    reviewCount.textContent = `${markedCount} marked`;
+  } else {
+    reviewCount.textContent = `${total} total`;
+  }
+
+  // Render cards or empty message
+  if (filtered.length === 0) {
+    let emptyText = 'No reviews found.';
+    if (currentFilter === 'pending') {
+      emptyText = '🎉 All caught up! No pending reviews left.';
+    } else if (currentFilter === 'marked') {
+      emptyText = 'No marked reviews yet. Click "Mark" on any review to move it here.';
+    }
+    reviewsList.innerHTML = `<div class="empty-state">${emptyText}</div>`;
+    return;
+  }
+
+  reviewsList.innerHTML = filtered.map(item => {
+    const isMarked = markedIds.has(item.id);
     const text = typeof item === 'string' ? item : (item.review || item.comment || '');
-    const number = index + 1;
 
     return `
-      <div class="review-card">
+      <div class="review-card ${isMarked ? 'is-marked' : ''}" data-id="${item.id}">
         <div class="card-top">
-          <span class="card-number">#${number}</span>
-          <button class="copy-btn" onclick="copyReviewText(this, ${index})">Copy</button>
+          <span class="card-number">#${item.id}</span>
+          <div class="card-actions">
+            <button class="mark-btn ${isMarked ? 'marked' : ''}" onclick="toggleMark(${item.id})">
+              ${isMarked ? '✓ Marked' : 'Mark'}
+            </button>
+            <button class="copy-btn" onclick="copyReviewText(this, ${item.id})">
+              Copy
+            </button>
+          </div>
         </div>
         <p class="review-text">${escapeHtml(text)}</p>
       </div>
     `;
   }).join('');
-
-  window._allReviews = reviews;
 }
 
-// Copy single review text to clipboard
-window.copyReviewText = function(btn, index) {
-  const item = window._allReviews[index];
+// Toggle mark status
+window.toggleMark = function(id) {
+  if (markedIds.has(id)) {
+    markedIds.delete(id);
+  } else {
+    markedIds.add(id);
+  }
+  saveMarkedIds();
+  render();
+};
+
+// Copy review text to clipboard
+window.copyReviewText = function(btn, id) {
+  const item = reviews.find(r => r.id === id);
   if (!item) return;
 
   const textToCopy = typeof item === 'string' ? item : (item.review || item.comment || '');
@@ -64,7 +152,7 @@ window.copyReviewText = function(btn, index) {
   setTimeout(() => {
     btn.textContent = 'Copy';
     btn.classList.remove('copied');
-  }, 1500);
+  }, 1400);
 };
 
 function escapeHtml(str) {
@@ -112,4 +200,4 @@ function getFallbackReviews() {
   ];
 }
 
-document.addEventListener('DOMContentLoaded', loadAndRenderReviews);
+document.addEventListener('DOMContentLoaded', init);

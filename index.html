@@ -16,8 +16,18 @@
 
   <main class="container">
     <header class="header">
-      <h1>Arrow Puzzle Reviews</h1>
-      <span id="reviewCount" class="review-count">0 reviews</span>
+      <div class="header-left">
+        <h1>Arrow Puzzle Reviews</h1>
+        <span id="reviewCount" class="review-count">0</span>
+      </div>
+
+      <div class="header-right">
+        <select id="filterSelect" class="filter-select">
+          <option value="pending" selected>Pending Reviews</option>
+          <option value="marked">Marked Reviews</option>
+          <option value="all">All Reviews</option>
+        </select>
+      </div>
     </header>
 
     <div id="reviewsList" class="reviews-list">
