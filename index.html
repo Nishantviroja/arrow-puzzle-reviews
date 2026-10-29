@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arrow Puzzle - App Reviews Hub</title>
+  
+  <!-- Rubik Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,500&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top App Navigation Bar -->
+  <header class="app-header">
+    <div class="container header-container">
+      <div class="brand-section">
+        <div class="app-logo-badge" title="Arrow Puzzle">
+          <span>➔</span>
+        </div>
+        <div class="brand-info">
+          <h1>
+            Arrow Puzzle Reviews
+            <span class="app-tag">Android</span>
+          </h1>
+          <p>Official Player Reviews & Feedback Database</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button class="btn btn-secondary" id="copyAllJsonBtn" title="Copy all reviews as a JSON array">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+          </svg>
+          Copy All (JSON)
+        </button>
+        <button class="btn btn-secondary" id="exportJsonBtn" title="Download reviews.json file">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" x2="12" y1="15" y2="3"/>
+          </svg>
+          Export JSON
+        </button>
+        <button class="btn btn-primary" id="openAddModalBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Add Review
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Rating Overview & Breakdown -->
+    <section class="stats-section">
+      <div class="stats-card">
+        <div class="rating-overview">
+          <div class="big-rating" id="avgRatingDisplay">0.0</div>
+          <div class="big-stars" id="avgStarsDisplay">★★★★★</div>
+          <div class="total-reviews-count" id="totalReviewsCount">Based on 0 reviews</div>
+        </div>
+
+        <div class="rating-breakdown" id="ratingBreakdownBars">
+          <!-- Filled dynamically by JavaScript -->
+        </div>
+
+        <div class="stats-highlights">
+          <div class="highlight-item">
+            <span class="highlight-label">Positive Sentiment</span>
+            <span class="highlight-val positive" id="positiveSentimentDisplay">0%</span>
+          </div>
+          <div class="highlight-item">
+            <span class="highlight-label">Latest Version</span>
+            <span class="highlight-val" id="latestVersionDisplay">v1.2.1</span>
+          </div>
+          <div class="highlight-item">
+            <span class="highlight-label">Data Source</span>
+            <span class="highlight-val" id="storageSourceBadge">reviews.json</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Search, Filters, and Sorting Toolbar -->
+    <section class="toolbar-section">
+      <div class="toolbar-card">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchInput" placeholder="Search by author, title, or keyword..." autocomplete="off">
+        </div>
+
+        <div class="filter-pills" id="ratingFilterPills">
+          <button class="filter-pill active" data-rating="all">All Reviews</button>
+          <button class="filter-pill" data-rating="5">5 ★</button>
+          <button class="filter-pill" data-rating="4">4 ★</button>
+          <button class="filter-pill" data-rating="3">3 ★</button>
+          <button class="filter-pill" data-rating="2">2 ★</button>
+          <button class="filter-pill" data-rating="1">1 ★</button>
+        </div>
+
+        <div class="sort-group">
+          <label for="sortSelect">Sort by:</label>
+          <select id="sortSelect" class="sort-select">
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="highest">Highest Rating</option>
+            <option value="lowest">Lowest Rating</option>
+            <option value="helpful">Most Helpful</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reviews Grid -->
+    <section class="reviews-section">
+      <div class="reviews-grid" id="reviewsGrid">
+        <!-- Rendered by app.js -->
+      </div>
+    </section>
+  </main>
+
+  <!-- Add New Review Modal -->
+  <div class="modal-backdrop" id="addReviewModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalTitle">Write a Review</h3>
+        <button class="close-btn" id="closeAddModalBtn" aria-label="Close modal">&times;</button>
+      </div>
+
+      <form id="addReviewForm">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Rating</label>
+            <div class="star-rating-input" id="starInputGroup">
+              <span class="star" data-value="1">★</span>
+              <span class="star" data-value="2">★</span>
+              <span class="star" data-value="3">★</span>
+              <span class="star" data-value="4">★</span>
+              <span class="star" data-value="5">★</span>
+            </div>
+            <input type="hidden" id="formRating" value="5">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="formAuthor">Your Name / Handle</label>
+              <input type="text" id="formAuthor" placeholder="e.g. Liam Vance" required>
+            </div>
+            <div class="form-group">
+              <label for="formDevice">Device (Optional)</label>
+              <input type="text" id="formDevice" placeholder="e.g. Pixel 8, Galaxy S24">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="formVersion">App Version</label>
+              <input type="text" id="formVersion" value="v1.2.1" required>
+            </div>
+            <div class="form-group">
+              <label for="formDate">Review Date</label>
+              <input type="date" id="formDate" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="formTitle">Review Title</label>
+            <input type="text" id="formTitle" placeholder="Sum up your experience in a headline" required>
+          </div>
+
+          <div class="form-group">
+            <label for="formComment">Detailed Review</label>
+            <textarea id="formComment" rows="4" placeholder="What did you like or dislike? How does it play?" required></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancelAddModalBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Publish Review</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="container">
+      <p>Arrow Puzzle Reviews Management • Stored in <code>reviews.json</code> • Styled with Google Font Rubik</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
