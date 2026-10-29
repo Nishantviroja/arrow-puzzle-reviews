@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   <title>Arrow Puzzle Reviews</title>
   
   <!-- Google Font Rubik -->
@@ -22,7 +22,7 @@
       </div>
 
       <div class="header-right">
-        <select id="filterSelect" class="filter-select">
+        <select id="filterSelect" class="filter-select" aria-label="Filter reviews">
           <option value="pending" selected>Pending Reviews</option>
           <option value="marked">Marked Reviews</option>
           <option value="all">All Reviews</option>
@@ -32,6 +32,16 @@
 
     <div id="reviewsList" class="reviews-list">
       <!-- Cards rendered by app.js -->
+    </div>
+
+    <!-- Load 10 More Container -->
+    <div id="loadMoreContainer" class="load-more-container">
+      <button id="loadMoreBtn" class="load-more-btn" onclick="loadMore()">
+        Load 10 More
+      </button>
+      <div id="allLoadedNotice" class="all-loaded-notice" style="display: none;">
+        All reviews loaded
+      </div>
     </div>
   </main>
 

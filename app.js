@@ -1,26 +1,44 @@
 // Arrow Puzzle Reviews Manager
-// Supports Copying, Marking/Unmarking, and Filtering (Pending, Marked, All)
+// Features: Load 10 More, Mobile Friendly, Persistent & Future-Proof Marked Reviews
 
 const STORAGE_KEY = 'arrow_puzzle_marked_reviews';
+const PAGE_SIZE = 10;
 
 let reviews = [];
 let markedIds = new Set();
 let currentFilter = 'pending';
+let visibleCount = PAGE_SIZE;
 
-// Load marked reviews from localStorage
+// Generate a permanent, stable ID for any review
+// Ensures future reviews added to reviews.json will NEVER affect existing pending/marked status
+function getReviewId(item, index) {
+  if (item && item.id !== undefined && item.id !== null) {
+    return String(item.id);
+  }
+  // Fallback hash of text if id is not present
+  const text = typeof item === 'string' ? item : (item.review || item.comment || '');
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) {
+    hash = ((hash << 5) - hash) + text.charCodeAt(i);
+    hash |= 0;
+  }
+  return 'text_' + Math.abs(hash);
+}
+
+// Load marked review IDs from localStorage
 function loadMarkedIds() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const arr = JSON.parse(saved);
-      markedIds = new Set(arr);
+      markedIds = new Set(arr.map(String));
     }
   } catch (e) {
     markedIds = new Set();
   }
 }
 
-// Save marked reviews to localStorage
+// Save marked review IDs to localStorage
 function saveMarkedIds() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify([...markedIds]));
 }
@@ -41,11 +59,12 @@ async function init() {
     reviews = getFallbackReviews();
   }
 
-  // Setup filter dropdown listener
+  // Filter dropdown listener
   const filterSelect = document.getElementById('filterSelect');
   filterSelect.value = currentFilter;
   filterSelect.addEventListener('change', (e) => {
     currentFilter = e.target.value;
+    visibleCount = PAGE_SIZE; // Reset to first 10 when changing filter
     render();
   });
 
@@ -56,19 +75,22 @@ function render() {
   const reviewsList = document.getElementById('reviewsList');
   const reviewCount = document.getElementById('reviewCount');
   const filterSelect = document.getElementById('filterSelect');
+  const loadMoreContainer = document.getElementById('loadMoreContainer');
+  const loadMoreBtn = document.getElementById('loadMoreBtn');
+  const allLoadedNotice = document.getElementById('allLoadedNotice');
 
   const total = reviews.length;
-  const markedCount = reviews.filter(r => markedIds.has(r.id)).length;
+  const markedCount = reviews.filter((r, idx) => markedIds.has(getReviewId(r, idx))).length;
   const pendingCount = total - markedCount;
 
-  // Update filter select option texts with counts
+  // Update dropdown labels with dynamic live counts
   filterSelect.options[0].text = `Pending Reviews (${pendingCount})`;
   filterSelect.options[1].text = `Marked Reviews (${markedCount})`;
   filterSelect.options[2].text = `All Reviews (${total})`;
 
-  // Filter reviews according to selection
-  const filtered = reviews.filter(r => {
-    const isMarked = markedIds.has(r.id);
+  // Filter reviews
+  const filtered = reviews.filter((r, idx) => {
+    const isMarked = markedIds.has(getReviewId(r, idx));
     if (currentFilter === 'pending') return !isMarked;
     if (currentFilter === 'marked') return isMarked;
     return true; // 'all'
@@ -83,31 +105,40 @@ function render() {
     reviewCount.textContent = `${total} total`;
   }
 
-  // Render cards or empty message
+  // Handle empty state
   if (filtered.length === 0) {
-    let emptyText = 'No reviews found.';
+    let emptyMsg = 'No reviews found.';
     if (currentFilter === 'pending') {
-      emptyText = '🎉 All caught up! No pending reviews left.';
+      emptyMsg = '🎉 All caught up! No pending reviews left.';
     } else if (currentFilter === 'marked') {
-      emptyText = 'No marked reviews yet. Click "Mark" on any review to move it here.';
+      emptyMsg = 'No marked reviews yet. Tap "Mark" on any review to move it here.';
     }
-    reviewsList.innerHTML = `<div class="empty-state">${emptyText}</div>`;
+    reviewsList.innerHTML = `<div class="empty-state">${emptyMsg}</div>`;
+    loadMoreContainer.style.display = 'none';
     return;
   }
 
-  reviewsList.innerHTML = filtered.map(item => {
-    const isMarked = markedIds.has(item.id);
+  loadMoreContainer.style.display = 'block';
+
+  // Paginated slice: Load 10 More
+  const displayed = filtered.slice(0, visibleCount);
+
+  // Render cards
+  reviewsList.innerHTML = displayed.map((item, localIdx) => {
+    const realId = getReviewId(item, localIdx);
+    const displayNum = item.id !== undefined ? item.id : (localIdx + 1);
+    const isMarked = markedIds.has(realId);
     const text = typeof item === 'string' ? item : (item.review || item.comment || '');
 
     return `
-      <div class="review-card ${isMarked ? 'is-marked' : ''}" data-id="${item.id}">
+      <div class="review-card ${isMarked ? 'is-marked' : ''}" data-id="${realId}">
         <div class="card-top">
-          <span class="card-number">#${item.id}</span>
+          <span class="card-number">#${displayNum}</span>
           <div class="card-actions">
-            <button class="mark-btn ${isMarked ? 'marked' : ''}" onclick="toggleMark(${item.id})">
+            <button class="mark-btn ${isMarked ? 'marked' : ''}" onclick="toggleMark('${realId}')">
               ${isMarked ? '✓ Marked' : 'Mark'}
             </button>
-            <button class="copy-btn" onclick="copyReviewText(this, ${item.id})">
+            <button class="copy-btn" onclick="copyReviewText(this, '${realId}')">
               Copy
             </button>
           </div>
@@ -116,22 +147,45 @@ function render() {
       </div>
     `;
   }).join('');
+
+  // Update Load 10 More button visibility and text
+  if (visibleCount < filtered.length) {
+    loadMoreBtn.style.display = 'inline-flex';
+    loadMoreBtn.textContent = `Load 10 More (${displayed.length} of ${filtered.length})`;
+    allLoadedNotice.style.display = 'none';
+  } else {
+    loadMoreBtn.style.display = 'none';
+    if (filtered.length > PAGE_SIZE) {
+      allLoadedNotice.style.display = 'block';
+      allLoadedNotice.textContent = `Showing all ${filtered.length} reviews`;
+    } else {
+      allLoadedNotice.style.display = 'none';
+    }
+  }
 }
 
-// Toggle mark status
+// "Load 10 More" button click handler
+window.loadMore = function() {
+  visibleCount += PAGE_SIZE;
+  render();
+};
+
+// Toggle review between Pending and Marked
 window.toggleMark = function(id) {
-  if (markedIds.has(id)) {
-    markedIds.delete(id);
+  const strId = String(id);
+  if (markedIds.has(strId)) {
+    markedIds.delete(strId);
   } else {
-    markedIds.add(id);
+    markedIds.add(strId);
   }
   saveMarkedIds();
   render();
 };
 
-// Copy review text to clipboard
+// Copy review text to clipboard (works reliably on both mobile and desktop)
 window.copyReviewText = function(btn, id) {
-  const item = reviews.find(r => r.id === id);
+  const strId = String(id);
+  const item = reviews.find((r, idx) => getReviewId(r, idx) === strId);
   if (!item) return;
 
   const textToCopy = typeof item === 'string' ? item : (item.review || item.comment || '');
@@ -141,6 +195,8 @@ window.copyReviewText = function(btn, id) {
   } else {
     const tempInput = document.createElement('textarea');
     tempInput.value = textToCopy;
+    tempInput.style.position = 'fixed';
+    tempInput.style.opacity = '0';
     document.body.appendChild(tempInput);
     tempInput.select();
     document.execCommand('copy');
