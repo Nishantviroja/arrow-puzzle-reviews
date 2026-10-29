@@ -182,6 +182,33 @@ window.toggleMark = function(id) {
   render();
 };
 
+// Reset and Clear all localStorage data
+window.clearAllData = function() {
+  const confirmed = confirm('Are you sure you want to reset all data? This will clear all marked reviews and restore the site to its initial state.');
+  if (!confirmed) return;
+
+  // Clear localStorage
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.clear();
+
+  // Reset in-memory state
+  markedIds.clear();
+  currentFilter = 'pending';
+  visibleCount = PAGE_SIZE;
+
+  // Reset dropdown to pending
+  const filterSelect = document.getElementById('filterSelect');
+  if (filterSelect) {
+    filterSelect.value = 'pending';
+  }
+
+  // Re-render
+  render();
+
+  // Smooth scroll to top
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
 // Copy review text to clipboard (works reliably on both mobile and desktop)
 window.copyReviewText = function(btn, id) {
   const strId = String(id);

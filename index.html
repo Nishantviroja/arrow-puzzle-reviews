@@ -34,13 +34,21 @@
       <!-- Cards rendered by app.js -->
     </div>
 
-    <!-- Load 10 More Container -->
-    <div id="loadMoreContainer" class="load-more-container">
-      <button id="loadMoreBtn" class="load-more-btn" onclick="loadMore()">
-        Load 10 More
-      </button>
-      <div id="allLoadedNotice" class="all-loaded-notice" style="display: none;">
-        All reviews loaded
+    <!-- Bottom Controls: Load 10 More & Clear Data -->
+    <div class="bottom-controls">
+      <div id="loadMoreContainer" class="load-more-container">
+        <button id="loadMoreBtn" class="load-more-btn" onclick="loadMore()">
+          Load 10 More
+        </button>
+        <div id="allLoadedNotice" class="all-loaded-notice" style="display: none;">
+          All reviews loaded
+        </div>
+      </div>
+
+      <div class="clear-data-wrapper">
+        <button type="button" class="clear-data-link" onclick="clearAllData()" title="Clear saved progress and reset all reviews to pending">
+          Reset / Clear Data
+        </button>
       </div>
     </div>
   </main>
