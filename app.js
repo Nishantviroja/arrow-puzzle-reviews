@@ -8,6 +8,7 @@ let reviews = [];
 let markedIds = new Set();
 let currentFilter = 'pending';
 let visibleCount = PAGE_SIZE;
+let shuffledList = null; // null = natural order; Array = randomized order for current filter
 
 // Generate a permanent, stable ID for any review
 // Ensures future reviews added to reviews.json will NEVER affect existing pending/marked status
@@ -64,6 +65,7 @@ async function init() {
   filterSelect.value = currentFilter;
   filterSelect.addEventListener('change', (e) => {
     currentFilter = e.target.value;
+    shuffledList = null; // Reset to natural order on filter change
     visibleCount = PAGE_SIZE; // Reset to first 10 when changing filter
     render();
   });
@@ -88,8 +90,9 @@ function render() {
   filterSelect.options[1].text = `Marked Reviews (${markedCount})`;
   filterSelect.options[2].text = `All Reviews (${total})`;
 
-  // Filter reviews
-  const filtered = reviews.filter((r, idx) => {
+  // Filter reviews (respects shuffled order if active)
+  const baseList = shuffledList || reviews;
+  const filtered = baseList.filter((r, idx) => {
     const isMarked = markedIds.has(getReviewId(r, idx));
     if (currentFilter === 'pending') return !isMarked;
     if (currentFilter === 'marked') return isMarked;
@@ -164,6 +167,40 @@ function render() {
   }
 }
 
+// Shuffle reviews based on current filter value
+window.shuffleCurrentList = function() {
+  // Get all reviews matching the current filter
+  const matching = reviews.filter((r, idx) => {
+    const isMarked = markedIds.has(getReviewId(r, idx));
+    if (currentFilter === 'pending') return !isMarked;
+    if (currentFilter === 'marked') return isMarked;
+    return true; // 'all'
+  });
+
+  if (matching.length === 0) return;
+
+  // Fisher-Yates shuffle
+  const arr = [...matching];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+
+  shuffledList = arr;
+  visibleCount = PAGE_SIZE; // Reset pagination to first 10 of shuffled cards
+  render();
+
+  // Button feedback animation
+  const btn = document.getElementById('shuffleBtn');
+  if (btn) {
+    btn.classList.add('shuffling');
+    setTimeout(() => btn.classList.remove('shuffling'), 400);
+  }
+
+  // Smooth scroll to top of reviews list
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
 // "Load 10 More" button click handler
 window.loadMore = function() {
   visibleCount += PAGE_SIZE;
@@ -193,6 +230,7 @@ window.clearAllData = function() {
 
   // Reset in-memory state
   markedIds.clear();
+  shuffledList = null;
   currentFilter = 'pending';
   visibleCount = PAGE_SIZE;
 

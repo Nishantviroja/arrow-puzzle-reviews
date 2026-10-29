@@ -52,6 +52,12 @@ body {
   white-space: nowrap;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .filter-select {
   font-family: 'Rubik', sans-serif;
   font-size: 0.875rem;
@@ -64,11 +70,51 @@ body {
   cursor: pointer;
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  min-height: 38px;
 }
 
 .filter-select:focus {
   border-color: #4f46e5;
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+.shuffle-btn {
+  font-family: 'Rubik', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #1e293b;
+  cursor: pointer;
+  outline: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  min-height: 38px;
+  user-select: none;
+}
+
+.shuffle-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.shuffle-btn:active {
+  transform: scale(0.96);
+}
+
+.shuffle-icon {
+  flex-shrink: 0;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.shuffle-btn.shuffling .shuffle-icon {
+  transform: rotate(360deg);
 }
 
 /* Reviews List & Cards */
@@ -299,12 +345,23 @@ body {
 
   .header-right {
     width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .filter-select {
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     font-size: 0.95rem; /* 16px equivalent prevents iOS auto-zoom */
+    padding: 10px 12px;
+    min-height: 42px;
+  }
+
+  .shuffle-btn {
     padding: 10px 14px;
+    font-size: 0.9rem;
+    min-height: 42px;
   }
 
   .review-card {
